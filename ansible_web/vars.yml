@@ -1,0 +1,6 @@
+---
+    app_user: "uas"
+    http_host: "uascc"
+    http_conf: "uascc.conf"
+    http_port: "80"
+    disable_default: true

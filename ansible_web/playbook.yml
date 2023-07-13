@@ -1,0 +1,59 @@
+---
+- name: Apache web server dengan ansibel & docker
+  hosts: localhost
+  vars_files:
+    - vars.yml
+  become: true
+  tasks:
+      - name: Install apache2
+        raw: apt update && apt install apache2 apache2-utils -y
+      - name: Copy file website
+        synchronize:
+            src: ./website/
+            dest: /var/www/html
+      - name: Hidupkan apache2
+        systemd:
+            name: apache2
+            state: started
+      - name: membuat dokumen root
+        file:
+            path: "/var/www/{{ http_host }}"
+            state: directory
+            owner: "{{ app_user }}"
+            mode: '0755'
+      - name: Copy file website
+        synchronize:
+            src: ./website/
+            dest: "/var/www/{{ http_host }}"
+      - name: Set up Apache virtualhost
+        template:
+            src: "files/apache.conf"
+            dest: "/etc/apache2/sites-available/{{ http_conf }}"
+      - name: Set up Apache virtualhost
+        shell: "/usr/sbin/a2ensite {{ http_conf }}"
+        notify: Reload Apache
+      - name: Menonaktifkan default site
+        shell: /usr/sbin/a2dissite 000-default.conf
+        when: disable_default
+        notify: Reload Apache
+      - name: menjalankan container
+        docker_container:
+            name: webserver_apache
+            image: ubuntu/apache2
+            state: started
+            exposed_ports: "80"
+            ports: "8080:80"
+            volumes: "/var/www/{{ http_host }}:/var/www/html/"
+            network_mode: bridge
+            restart: yes
+            restart_policy: always
+  handlers:
+      - name: Reload Apache
+        service:
+          name: apache2
+          state: reloaded
+
+      - name: Restart Apache
+        service:
+          name: apache2
+          state: restarted

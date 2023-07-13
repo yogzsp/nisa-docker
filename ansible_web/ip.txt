@@ -1,0 +1,2 @@
+[web]
+192.168.1.12 ansible_user=uas ansible_ssh_pass=12345678 ansible_connection=ssh
